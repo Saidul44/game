@@ -23,12 +23,13 @@ canvas {
 
 var canvas_width = 350;
 var canvas_height = 450;
-var radius = 23;
+var radius = 18;
 
 var isDragging = false;
 
 var myGamePiece;
 var myObstacles = [];
+var bgpos = -16;
 
 function startGame() {
 	window_width = window.innerWidth;
@@ -40,7 +41,7 @@ function startGame() {
 	}
 
 
-	myGamePiece = new component(canvas_width / 2, canvas_height - radius -50, radius, 'red');
+	myGamePiece = new component(canvas_width / 2, canvas_height - radius -50, radius, 'main_plane.png', 'image');
 	// myScore = new component("30px", "Consolas", "black", 280, 40, "text");
 	myGameArea.start();
 
@@ -59,11 +60,22 @@ var myGameArea = {
 		this.context = this.canvas.getContext('2d');
 		document.body.appendChild(this.canvas);
 
-		this.canvas.offset = this.canvas.getBoundingClientRect();
+        this.background_image = new Image();
+        this.background_image.src = 'bg1.png';
 
-		this.frameNo = 0;
+        this.canvas.offset = this.canvas.getBoundingClientRect();
+
+        this.frameNo = 0;
         this.interval = setInterval(updateGameArea, 20);
-	},
+    },
+    background: function() {
+        // this.context.save();
+        // this.context.globalAlpha = 0.8;
+        console.log(this.canvas.height + 16 - Math.abs(bgpos));
+        this.context.drawImage(this.background_image, 0, bgpos, this.canvas.width, this.canvas.height + 16 - Math.abs(bgpos));
+        // this.context.drawImage(this.background_image, 0, this.canvas.height, this.canvas.width, this.canvas.height + Math.abs(bgpos));
+        // this.context.restore()
+    },
 	clear : function() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     },
@@ -72,7 +84,13 @@ var myGameArea = {
     }
 }
 
-function component(x, y, radius, color) {
+function component(x, y, radius, color, type) {
+    this.type = type;
+    if (type == "image") {
+        this.image = new Image();
+        this.image.src = color;
+    }
+
 	this.x = x;
 	this.y = y;
 	this.radius = radius;
@@ -82,13 +100,22 @@ function component(x, y, radius, color) {
 
 	this.update = function() {
         ctx = myGameArea.context;
-		ctx.beginPath();
-		ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-		ctx.fillStyle = color;
-		ctx.fill();
-		// ctx.lineWidth = 0;
-		ctx.strokeStyle = this.color;
-		ctx.stroke();
+        if (type == "image") {
+            ctx.drawImage(this.image, 
+                this.x - radius, 
+                this.y - radius,
+                this.radius * 2, this.radius * 2);
+        } else {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            // ctx.lineWidth = 0;
+            ctx.strokeStyle = this.color;
+            ctx.stroke();
+        }
+
+		
     }
     this.newPos = function() {
     	// for facing ball
@@ -123,20 +150,29 @@ function updateGameArea() {
     }
 
 	myGameArea.clear();
+
+    bgpos = (bgpos + 2);
+    
+    if(bgpos >= 0) {
+        bgpos = -16;
+    }
+    // console.log(bgpos);
+
+    myGameArea.background();
     // myGamePiece.newPos();   
     myGameArea.frameNo += 1;
     if (myGameArea.frameNo == 1 || everyinterval(100)) {
         x = myGameArea.canvas.width;
 
-        gap = parseInt(x / 3);
+        gap = parseInt(x / 4);
 
         minHeight = 20;
         maxHeight = 60;
 
-        myObstacles.push(new component(randomValue(radius, gap - radius), -randomValue(minHeight, maxHeight), radius, "green"));
-        myObstacles.push(new component(randomValue(gap + radius, gap * 2 - radius), -randomValue(minHeight, maxHeight), radius, "green"));
-        myObstacles.push(new component(randomValue(gap * 2 + radius, gap * 3 - radius), -randomValue(minHeight, maxHeight), radius, "green"));
-        myObstacles.push(new component(randomValue(gap * 3 + radius, gap * 4 - radius), -randomValue(minHeight, maxHeight), radius, "green"));
+        myObstacles.push(new component(randomValue(radius, gap - radius), -randomValue(minHeight, maxHeight), radius, "attack_plane.png", 'image'));
+        myObstacles.push(new component(randomValue(gap + radius, gap * 2 - radius), -randomValue(minHeight, maxHeight), radius, "attack_plane.png", 'image'));
+        myObstacles.push(new component(randomValue(gap * 2 + radius, gap * 3 - radius), -randomValue(minHeight, maxHeight), radius, "attack_plane.png", 'image'));
+        myObstacles.push(new component(randomValue(gap * 3 + radius, gap * 4 - radius), -randomValue(minHeight, maxHeight), radius, "attack_plane.png", 'image'));
     }
 
     for (i = 0; i < myObstacles.length; i += 1) {
