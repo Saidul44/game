@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+canvas {
+	border: 1px solid #d3d3d3;
+	background-color: #f1f1f1;
+	display: block;
+	position: absolute;
+	margin: auto;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+</style>
+</head>
+
+<body onload="startGame()">
+</body>
+
+<script>
+
+var canvas_width = 350;
+var canvas_height = 450;
+var radius = 23;
+
+var isDragging = false;
+
+var myGamePiece;
+var myObstacles = [];
+
+function startGame() {
+	window_width = window.innerWidth;
+	window_height = window.innerHeight;
+
+	var evt = "touchstart";
+	if (window_width >= 500) {
+		evt = "mousedown";
+	}
+
+
+	myGamePiece = new component(canvas_width / 2, canvas_height - radius -50, radius, 'red');
+	// myScore = new component("30px", "Consolas", "black", 280, 40, "text");
+	myGameArea.start();
+
+	myGameArea.canvas.addEventListener(evt, mouseDownLister);
+	myGameArea.canvas.addEventListener('mousemove', mouseMoveLister);
+	myGameArea.canvas.addEventListener('mouseup', mouseUpLister);
+	document.addEventListener('keydown', keyDownLister);
+}
+
+var myGameArea = {
+	canvas : document.createElement('canvas'),
+	start : function() {
+		this.canvas.width = canvas_width;
+		this.canvas.height = canvas_height;
+
+		this.context = this.canvas.getContext('2d');
+		document.body.appendChild(this.canvas);
+
+		this.canvas.offset = this.canvas.getBoundingClientRect();
+
+		this.frameNo = 0;
+        this.interval = setInterval(updateGameArea, 20);
+	},
+	clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function() {
+        clearInterval(this.interval);
+    }
+}
+
+function component(x, y, radius, color) {
+	this.x = x;
+	this.y = y;
+	this.radius = radius;
+	this.color = color;
+	this.speedX = 0;
+    this.speedY = 0;
+
+	this.update = function() {
+        ctx = myGameArea.context;
+		ctx.beginPath();
+		ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+		ctx.fillStyle = color;
+		ctx.fill();
+		// ctx.lineWidth = 0;
+		ctx.strokeStyle = this.color;
+		ctx.stroke();
+    }
+    this.newPos = function() {
+    	// for facing ball
+        this.x += this.speedX;
+        this.y += this.speedY;        
+    }
+    this.crashWith = function(otherobj) {
+        var crash = false;
+        if((Math.pow((otherobj.x - myGamePiece.x), 2) + Math.pow((otherobj.y - myGamePiece.y), 2)) < Math.pow(radius * 2 + 1, 2)) {
+        	console.log(otherobj.x);
+        	console.log(otherobj.y);
+        	console.log(myGamePiece.x);
+        	console.log(myGamePiece.y);
+        	crash = true;
+        }
+
+        return crash;
+    }
+}
+
+function updateGameArea() {
+	if((myGamePiece.x <= radius) || (myGamePiece.x >= (myGameArea.canvas.width - radius)) || (myGamePiece.y <= radius) || (myGamePiece.y >= (myGameArea.canvas.height - radius))){
+		myGameArea.stop();
+        return;
+	}
+
+	for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {
+            myGameArea.stop();
+            return;
+        } 
+    }
+
+	myGameArea.clear();
+    // myGamePiece.newPos();   
+    myGameArea.frameNo += 1;
+    if (myGameArea.frameNo == 1 || everyinterval(100)) {
+        x = myGameArea.canvas.width;
+
+        gap = parseInt(x / 3);
+
+        minHeight = 20;
+        maxHeight = 60;
+
+        myObstacles.push(new component(randomValue(radius, gap - radius), -randomValue(minHeight, maxHeight), radius, "green"));
+        myObstacles.push(new component(randomValue(gap + radius, gap * 2 - radius), -randomValue(minHeight, maxHeight), radius, "green"));
+        myObstacles.push(new component(randomValue(gap * 2 + radius, gap * 3 - radius), -randomValue(minHeight, maxHeight), radius, "green"));
+        myObstacles.push(new component(randomValue(gap * 3 + radius, gap * 4 - radius), -randomValue(minHeight, maxHeight), radius, "green"));
+    }
+
+    for (i = 0; i < myObstacles.length; i += 1) {
+        myObstacles[i].speedY = +1;
+        myObstacles[i].newPos();
+        myObstacles[i].update();
+    }
+
+    myGamePiece.update();
+}
+
+function randomValue(min, max) {
+	return Math.floor( Math.random() * (max - min) + min);
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+function mouseDownLister(evt, that) {
+	clickX = parseInt(evt.clientX - myGameArea.canvas.offset.left);
+	clickY = parseInt(evt.clientY - myGameArea.canvas.offset.top);
+	
+	if((Math.pow((clickX - myGamePiece.x), 2) + Math.pow((clickY - myGamePiece.y), 2)) < Math.pow(radius, 2)) {
+
+		isDragging = true;
+	}
+
+}
+
+function mouseMoveLister(evt) {
+	if(isDragging) {
+		myGamePiece.x = parseInt(evt.clientX - myGameArea.canvas.offset.left);
+		myGamePiece.y = parseInt(evt.clientY - myGameArea.canvas.offset.top);
+	}
+}
+
+function mouseUpLister(evt) {
+	if(! isDragging) {
+		return;
+	}
+
+	isDragging = false;
+}
+
+function keyDownLister(evt) {
+	evt = evt || window.event;
+
+    if (evt.keyCode == '38') {
+        // up arrow
+        myGamePiece.y -= 3;
+    }
+    else if (evt.keyCode == '40') {
+        // down arrow
+        myGamePiece.y += 3;
+    }
+    else if (evt.keyCode == '37') {
+       // left arrow
+       myGamePiece.x -= 3;
+    }
+    else if (evt.keyCode == '39') {
+       // right arrow
+       myGamePiece.x += 3;
+    }
+}
+
+</script>
+
+</html>
